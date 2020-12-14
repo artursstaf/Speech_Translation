@@ -1,30 +1,23 @@
-# Speech_Translation
+# Speech Translation
 
-Synthetic Data Filtering:
-Apply the following scripts in the order presented here.
-  1.	Punctuation removal (Latvian files): First_cleaning.py
-  2.	Removal of sentences containing typical ASR errors: ASR_Mistakes.py
-  3.	Calculating Levenshtein distance for each pair of sentences: Diff_Lev.py
-  4.	Filtering according the Levenshtein distance (>0.9): Filtering_Distances.py
+## Instalation
+Clone the repository and create conda environment by running `conda env create -f environment.yml`.
 
+### Synthetic Data Filtering
+Filter noise from synthetic speech translation dataset - (source, source_asr, source_pos, target). Source and Source_asr pairs that are not similar are dropped.
 
-Rule-Based Synthetic Noise Generation:
-Apply the following scripts in the order presented here.
-  1.	Comparison between files using difflib Python library: Comparison_difflib.py
-  2.	Pre-processing results from difflib analysis: Difflib_post_treatment.py
-  3.	Analysing types of errors (token error, split and merge): Diff_analysis.py
-  4.	Identification of suffix changes (using a list of possible suffixes in Latvian): Suffix_analysis.py
-  5.	Counting number of each type of suffix change: Count_suffix_change.py
-  6.	Identification of cases where split or merge of tokens occurred with a suffix change: Split_Merge_Suffix_analysis.py 
-  7.	Identification of cases where the difference was linked to a close phoneme change (ex: "s" changed into "z"): Phoneme_count.py
-  8.	For each pair of suffix change identified in step 5, use the following scripts to generate noise (here the scrips concern the change "a" to "ā"):
-  
-  a.	Analysis of Part-of-Speech changes when suffix change happens in ASR: POS_noise_analysis_a_along.py
-  
-  b.	Generation of sentences containing noise (without vocabulary check): Noise_adding_a_along.py
-  - In list_POS, there must be the list of allowed POS identified in step 8.a (first column of the file Result_same_POS1_a_along.txt)
-  - For new_rand, the value for the condition (line 135) is defined by the ratio of the number of occurrences of this suffix changes and the total number of suffix changes. 
-  
-  c.	Generation of sentences containing noise (with vocabulary check): Noise_adding_a_along_with_vocab_check.py
-  - In list_POS, there must be the list of allowed POS identified in step 8.a (first column of the file Result_same_POS1_a_along.txt)
-  - For new_rand, the value for the condition (line 135) is defined by the ratio of the number of occurrences of this suffix changes and the total number of suffix changes.
+`python speech_translation.py filter --workdir= --source= --source_asr= --target= --source_pos= --target=
+--result_source= --result_source_asr --result_target --result_source_pos`
+
+### Rule-Based Synthetic Noise Generation
+Learn suffix noise model from filtered synthetic dataset.
+
+`python speech_translation.py learn_noise_model --workdir=workdir --source= --source_pos= --source_asr= --result_model=`
+
+Apply suffix noise model to any parallel dataset.
+
+`python speech_translation.py apply_noise_model --source= --source_pos= --target= --result_source= --result_target= --noise_model=`
+
+Model ASR word split/merges.
+
+`python speech_translation.py apply_noise_model generate_split_merge --source= --target= --result_target= --result_source=`
