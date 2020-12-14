@@ -20,4 +20,4 @@ Apply suffix noise model to any parallel dataset.
 
 Model ASR word split/merges.
 
-`python speech_translation.py apply_noise_model generate_split_merge --source= --target= --result_target= --result_source=`
+`python speech_translation.py generate_split_merge --source= --target= --result_target= --result_source=`
