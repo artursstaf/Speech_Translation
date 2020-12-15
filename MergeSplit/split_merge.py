@@ -1,10 +1,7 @@
 import argparse
 from pathlib import Path
 import random
-
 from tqdm import tqdm
-
-from DataFiltering.first_cleaning import remove_punctuation
 
 LEXICON_FREQ_THRESHOLD = 50
 
@@ -39,13 +36,14 @@ def generate_split_merge(source, target, result_source, result_target, dict_sour
             open(result_source, 'w', encoding='utf-8') as result_source, \
             open(result_target, 'w', encoding='utf-8') as result_target:
 
+        source = source.readlines()
+
         if dict_source is not None:
             with open(dict_source, 'r', encoding='utf-8') as dict_source:
                 dict_source = dict_source.readlines()
         else:
-            dict_source = source.readlines()
+            dict_source = source
 
-        source = source.readlines()
         target = target.readlines()
 
         tree = build_lexicon_tree(dict_source)
@@ -73,8 +71,8 @@ def generate_split_merge(source, target, result_source, result_target, dict_sour
         print(f"Total clean: {sum(int(not i) for i in is_noised)}, " +
               f"Total noised: {sum(int(i) for i in is_noised)}, Total: {len(noised_src)}")
 
-        only_noised_sentences_src = [remove_punctuation(src_line) for src_line, noised in zip(noised_src, is_noised) if noised]
-        only_noised_sentences_trg = [remove_punctuation(trg_line) for trg_line, noised in zip(target, is_noised) if noised]
+        only_noised_sentences_src = [src_line for src_line, noised in zip(noised_src, is_noised) if noised]
+        only_noised_sentences_trg = [trg_line for trg_line, noised in zip(target, is_noised) if noised]
 
         result_source.writelines(only_noised_sentences_src)
         result_target.writelines(only_noised_sentences_trg)

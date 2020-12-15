@@ -38,5 +38,6 @@ dependencies:
   - zlib=1.2.11=h7b6447c_3
   - pip:
     - strsim==0.0.3
+    - subword-nmt==0.3.7
     - tqdm==4.50.0
 prefix: /home/TILDE.LV/arturs.stafanovics/anaconda3/envs/speech-translation

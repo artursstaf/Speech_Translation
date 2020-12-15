@@ -74,8 +74,8 @@ def add_noise(source, source_pos, target, result_source, result_target, noise_mo
         print(
             f"Total clean: {sum(int(not i) for i in is_noised)}, Total noised: {sum(int(i) for i in is_noised)}, Total: {len(result)}")
 
-        only_noised_sentences_src = [remove_punctuation(src_line) for src_line, noised in zip(result, is_noised) if noised]
-        only_noised_sentences_trg = [remove_punctuation(trg_line) for trg_line, noised in zip(target, is_noised) if noised]
+        only_noised_sentences_src = [src_line for src_line, noised in zip(result, is_noised) if noised]
+        only_noised_sentences_trg = [trg_line for trg_line, noised in zip(target, is_noised) if noised]
 
         result_source.writelines(only_noised_sentences_src)
         result_target.writelines(only_noised_sentences_trg)

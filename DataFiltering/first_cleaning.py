@@ -24,12 +24,12 @@ def first_cleaning(source, source_asr, result_source, result_source_asr, **kwarg
         source_asr = source_asr.readlines()
 
         # Size comparison to check if files contain the same number of sentences
-        print("Size of source " + str(len(source)) + " sentences", file=sys.stderr)
-        print("Size of source asr: " + str(len(source_asr)) + " sentences", file=sys.stderr)
+        print("Size of source " + str(len(source)) + " sentences")
+        print("Size of source asr: " + str(len(source_asr)) + " sentences")
 
         # Delta: difference of size between files, it should be 0 (sentences aligned)
         delta_sent = len(source) - len(source_asr)
-        print("Number of sentences deleted in ASR file: " + str(delta_sent) + " sentences", file=sys.stderr)
+        print("Number of sentences deleted in ASR file: " + str(delta_sent) + " sentences")
 
         # Punctuation removal: using string.punctuation list
         clean_wo_punct = []
@@ -38,7 +38,7 @@ def first_cleaning(source, source_asr, result_source, result_source_asr, **kwarg
 
         clean_asr_wo_punct = []
         for element in source_asr:
-            clean_asr_wo_punct.append(remove_punctuation(element))
+            clean_asr_wo_punct.append(remove_punctuation(re.sub(re.escape(r'<unk>'), '', element)))
 
         for src, src_asr in zip(clean_wo_punct, clean_asr_wo_punct):
             result_source.write(src)

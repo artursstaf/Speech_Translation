@@ -57,11 +57,11 @@ def diff_lev(source, source_asr, target, source_pos, result_source, result_sourc
             distances.write(f"{dist}\n")
 
         # print Statistics
-        print(f"Equal count:{counter['equal']}, ratio: {counter['equal'] / len(source)}", file=sys.stderr)
-        print(f"{counter['close']} {counter['close'] / len(source)}", file=sys.stderr)
-        print(f"{counter['medium']} {counter['medium'] / len(source)}", file=sys.stderr)
-        print(f"{counter['low']} {counter['low'] / len(source)}", file=sys.stderr)
-        print(f"{counter['different']} {counter['different'] / len(source)}", file=sys.stderr)
+        print(f"Equal count:{counter['equal']}, ratio: {counter['equal'] / len(source)}")
+        print(f"{counter['close']} {counter['close'] / len(source)}")
+        print(f"{counter['medium']} {counter['medium'] / len(source)}")
+        print(f"{counter['low']} {counter['low'] / len(source)}")
+        print(f"{counter['different']} {counter['different'] / len(source)}")
 
         # Loop to identify similar sentences and write in output files
         # Counting sentences with same number of tokens comparing clean and asr
@@ -75,8 +75,8 @@ def diff_lev(source, source_asr, target, source_pos, result_source, result_sourc
                 if len(source_sent.split(" ")) == len(source_asr_sent.split(" ")):
                     counter["equal_nb_tokens"] += 1
 
-        print(f"Sentences after cleaning {counter['after_filter']}", file=sys.stderr)
-        print(f"Sentences with equal number of tokens: {counter['equal_nb_tokens']}", file=sys.stderr)
+        print(f"Sentences after cleaning {counter['after_filter']}")
+        print(f"Sentences with equal number of tokens: {counter['equal_nb_tokens']}")
 
 
 def main():

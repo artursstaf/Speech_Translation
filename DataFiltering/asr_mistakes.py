@@ -47,7 +47,7 @@ def asr_mistakes(source, source_asr, target, source_pos, result_source, result_s
             if SequenceMatcher(None, source[j], source_asr[j]).quick_ratio() < 1:
                 i += 1
 
-        print(f"Num of different sentences: {i}", file=sys.stderr)
+        print(f"Num of different sentences: {i}")
 
 
 def main():
