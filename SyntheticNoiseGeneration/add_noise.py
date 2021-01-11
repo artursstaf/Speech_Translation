@@ -4,9 +4,6 @@ import re
 from collections import Counter
 from pathlib import Path
 import math
-import json
-
-from DataFiltering.first_cleaning import remove_punctuation
 
 
 def add_noise(source, source_pos, target, result_source, result_target, noise_model, **kwargs):
@@ -20,7 +17,7 @@ def add_noise(source, source_pos, target, result_source, result_target, noise_mo
         POS_clean = POS_clean.readlines()
         clean = clean.readlines()
         target = target.readlines()
-        noise_model = json.loads(noise_model.read())
+        noise_model = noise_model.readlines()
         print("Input files read")
 
         print("Building Dictionary")
@@ -33,8 +30,8 @@ def add_noise(source, source_pos, target, result_source, result_target, noise_mo
         noised_sentences_for_suffix = []
 
         # Apply noise starting by least common
-        for key, (percentage, suffix_pos) in list(noise_model.items())[::-1]:
-            source_suffix, asr_suffix = key.split("_")
+        for noise_model_line in noise_model[::-1]:
+            source_suffix, asr_suffix, suffix_pos, count, percentage = noise_model_line.split()
             target_noise_count = math.floor(len(clean) * (float(percentage.replace("%", "")) / 100))
             noised_sentences = get_noised_sentences(source_suffix, asr_suffix, clean, POS_clean, vocab_dic, suffix_pos)
             random.shuffle(noised_sentences)
@@ -82,7 +79,9 @@ def add_noise(source, source_pos, target, result_source, result_target, noise_mo
 
 
 def get_noised_sentences(orig_suffix, asr_suffix, clean, POS_clean, vocabulary, suffix_pos):
-    print(f"Generating noised sentences for {orig_suffix}_{asr_suffix}")
+    suffix_pos = suffix_pos.strip()
+
+    print(f"Generating noised sentences for {orig_suffix}_{asr_suffix}_{suffix_pos}")
     POS_clean_tok = []
     for sentence in POS_clean:
         sentence = sentence.split()
@@ -93,9 +92,7 @@ def get_noised_sentences(orig_suffix, asr_suffix, clean, POS_clean, vocabulary, 
         sentence = sentence.split()
         sentence_clean_tok.append(sentence)
 
-    list_POS = [line.strip() for line in suffix_pos]
 
-    list_POS = set(list_POS)
     noise_sentences = []
     nb_changes_each_sentence = []
 
@@ -112,7 +109,7 @@ def get_noised_sentences(orig_suffix, asr_suffix, clean, POS_clean, vocabulary, 
         for index_tok_clean, token in enumerate(sentence_clean_tok[i]):
             if token.endswith(orig_suffix):
                 if len(POS_clean_tok[i]) == len(sentence_clean_tok[i]):
-                    if POS_clean_tok[i][index_tok_clean].split("|")[2] in list_POS:
+                    if POS_clean_tok[i][index_tok_clean].split("|")[2].strip() == suffix_pos:
                         nb_changes_each_sentence[i] = nb_changes_each_sentence[i] + 1
                 else:
                     raise Exception(f"pos token count doesnt match in  {i} sentence")
@@ -125,7 +122,7 @@ def get_noised_sentences(orig_suffix, asr_suffix, clean, POS_clean, vocabulary, 
         change = False
         for index_tok_clean, token in enumerate(sentence_clean_tok[i]):
             if token.endswith(orig_suffix):
-                if POS_clean_tok[i][index_tok_clean].split("|")[2] in list_POS:
+                if POS_clean_tok[i][index_tok_clean].split("|")[2].strip() == suffix_pos:
                     noise_tok = re.sub(f"{re.escape(orig_suffix)}$", asr_suffix, token)
                     count_tot += 1
                     rand = random.uniform(0, 1)

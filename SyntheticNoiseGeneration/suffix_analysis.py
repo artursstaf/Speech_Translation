@@ -1,17 +1,18 @@
 import argparse
-import codecs
 import re
 from collections import Counter
-from difflib import SequenceMatcher
 from pathlib import Path
 
 TOP_N_MISTAKES = 25
 
-def suffix_analysis(workdir, **kwargs):
-    with open(workdir / 'diff_source_and_asr', 'r', encoding='utf-8') as diff_source_and_asr, \
-            open(workdir / 'suffix_pair_count', 'w', encoding='utf-8') as count_result:
+
+def suffix_analysis(source_pos, result_model, workdir, **kwargs):
+    with open(source_pos, 'r', encoding='utf-8') as source_pos, \
+            open(workdir / 'diff_source_and_asr', 'r', encoding='utf-8') as diff_source_and_asr, \
+            open(result_model, 'w', encoding='utf-8') as result_file:
 
         text = diff_source_and_asr.readlines()
+        source_pos = source_pos.readlines()
 
         count_error = 0
         count_split = 0
@@ -19,23 +20,24 @@ def suffix_analysis(workdir, **kwargs):
         count_special_split = 0
         count_special_merge = 0
 
-        list_clean = []
+        list_src = []
+        list_src_pos = []
         list_asr = []
-
-        print("Starting suffix analysis")
 
         i = 0
         while i < len(text):
-            token = text[i].split(" ")
-            nb_tokens = len(text[i].split(" "))
+            tokens = text[i].split(" ")
+            sentence_pos = source_pos[i].split(" ")
+            nb_tokens = len(tokens)
             j = 0
             while j < nb_tokens:
                 count_plus = 0
                 count_minus = 0
                 count_char = 0
                 count_space = 0
-                if re.search(r'[a-z]*', token[j]):
-                    for char in token[j]:
+
+                if re.search(r'[a-z]*', tokens[j]):
+                    for char in tokens[j]:
                         if char == '+':
                             count_plus += 1
                         if char == '-':
@@ -44,49 +46,61 @@ def suffix_analysis(workdir, **kwargs):
                             count_char += 1
                         if char == 'S':
                             count_space += 1
-                if re.search(r"^\+$", token[j]):
+                if re.search(r"^\+$", tokens[j]):
                     count_split += 1
-                if re.search(r"^-$", token[j]):
+                if re.search(r"^-$", tokens[j]):
                     count_merge += 1
+
                 if count_plus != 0 or count_minus != 0:
                     if count_char > count_plus and count_char > count_minus and count_space == 0:
-                        a = re.search(r"\+", token[j])
-                        b = re.search(r"-", token[j])
+                        a = re.search(r"\+", tokens[j])
+                        b = re.search(r"-", tokens[j])
                         count_error += 1
-                        suf_clean = ''
-                        suf_asr = ''
-                        for k in range(len(token[j]) - 1):
+                        word_src = ''
+                        word_asr = ''
+                        for k in range(len(tokens[j]) - 1):
                             if a and b:
-                                x = token[j][k]
-                                if token[j][k] != '-' \
-                                        and token[j][k] != '+' \
-                                        and token[j][k - 1] != '-' \
-                                        and token[j][k - 1] != '+':
-                                    suf_asr = suf_asr + token[j][k]
-                                    suf_clean = suf_clean + token[j][k]
-                                if token[j][k] == '-':
-                                    suf_clean = suf_clean + token[j][k + 1]
-                                if token[j][k] == '+':
-                                    suf_asr = suf_asr + token[j][k + 1]
-                        list_clean.append(suf_clean)
-                        list_asr.append(suf_asr)
-                if re.search(r"[a-z]\+S[a-z]", token[j]) and count_space == count_plus and count_minus == 0:
+                                if tokens[j][k] != '-' \
+                                        and tokens[j][k] != '+' \
+                                        and tokens[j][k - 1] != '-' \
+                                        and tokens[j][k - 1] != '+':
+                                    word_asr = word_asr + tokens[j][k]
+                                    word_src = word_src + tokens[j][k]
+                                if tokens[j][k] == '-':
+                                    word_src = word_src + tokens[j][k + 1]
+                                if tokens[j][k] == '+':
+                                    word_asr = word_asr + tokens[j][k + 1]
+
+                        word_pos = ''
+                        for word in sentence_pos:
+                            word = word.split("|")
+                            if word_src in word[0]:
+                                word_pos = word[2].strip("\n")
+                                break
+                        if word_src != '' and word_asr != '' and word_pos != '':
+                            list_src_pos.append(word_pos)
+                            list_src.append(word_src)
+                            list_asr.append(word_asr)
+                if re.search(r"[a-z]\+S[a-z]", tokens[j]) and count_space == count_plus and count_minus == 0:
                     count_special_split += 1
-                if re.search(r"[a-z]\-S[a-z]", token[j]) and count_space == count_minus and count_plus == 0:
+                if re.search(r"[a-z]\-S[a-z]", tokens[j]) and count_space == count_minus and count_plus == 0:
                     count_special_merge += 1
                 j += 1
             i += 1
 
-        for i in range(len(list_clean)):
-            if re.search("\n", list_clean[i]):
-                list_clean[i] = re.sub("\n", "", list_clean[i])
+        for i in range(len(list_src)):
+            if re.search("\n", list_src[i]):
+                list_src[i] = re.sub("\n", "", list_src[i])
+
+        for i in range(len(list_src_pos)):
+            if re.search("\n", list_src_pos[i]):
+                list_src_pos[i] = re.sub("\n", "", list_src_pos[i])
 
         for i in range(len(list_asr)):
             if re.search("\n", list_asr[i]):
                 list_asr[i] = re.sub("\n", "", list_asr[i])
 
         count_error_suffixes_in_list = 0
-        words = 0
 
         def get_root(a, b):
             min_range = min(len(a), len(b))
@@ -100,61 +114,58 @@ def suffix_analysis(workdir, **kwargs):
             return ""
 
         result1_list = []
-        for i in range(len(list_clean)):
-            count_suff_clean = 0
+        for i in range(len(list_src)):
+            count_suff_src = 0
             count_suff_asr = 0
-            roots_clean = []
+            roots_src = []
             roots_asr = []
 
-            count_suff_clean += 1
-            root = get_root(list_clean[i], list_asr[i])
+            count_suff_src += 1
+            root = get_root(list_src[i], list_asr[i])
             if root != "":
-                roots_clean.append(root)
+                roots_src.append(root)
                 count_suff_asr += 1
                 roots_asr.append(root)
 
-            if count_suff_clean != 0 and count_suff_asr != 0:
-                root_clean = min(roots_clean, key=len)
+            if count_suff_src != 0 and count_suff_asr != 0:
+                root_src = min(roots_src, key=len)
                 root_asr = min(roots_asr, key=len)
 
-                if root_clean == root_asr:
-                    # result.write(list_clean[i] + "\t"
-                    #              + list_asr[i] + "\t"
-                    #              + root_clean + "\t"
-                    #              + re.sub(root_clean, "", list_clean[i]) + "\t"
-                    #              + re.sub(root_asr, "", list_asr[i]) + "\n")
-
+                if root_src == root_asr:
                     result1_list.append(
-                        re.sub(root_clean, "", list_clean[i]) + " " + re.sub(root_asr, "", list_asr[i]) + '\n')
+                        re.sub(root_src, "", list_src[i])
+                        + " "
+                        + re.sub(root_asr, "", list_asr[i])
+                        + " "
+                        + list_src_pos[i]
+                        + '\n')
                     count_error_suffixes_in_list += 1
 
-        # result1.writelines(result1_list)
         print(f"Suffix errors: {count_error_suffixes_in_list}")
-        print(count_error)
-        print(count_split)
-        print(count_merge)
-        print(count_special_split)
-        print(count_special_merge)
+        print(f"Total erros: {count_error}")
+        print(f"Splits: {count_split}")
+        print(f"Merges: {count_merge}")
 
         a = Counter(map(lambda x: x.strip(), result1_list))
+        # Take top n results
         a = Counter(dict(a.most_common()[:TOP_N_MISTAKES]))
 
         # Write result
         total = sum(a.values())
         total_perc = 0
         for k, v in a.most_common():
-            total_perc += (v/total) * 100
-            count_result.write("{} {} {:.2f}%\n".format(k, v, (v / total) * 100))
-
-        print(f"total perc {total_perc}")
+            total_perc += (v / total) * 100
+            result_file.write("{} {} {:.2f}%\n".format(k, v, (v / total) * 100))
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--workdir", required=True)
+    parser.add_argument("--source_pos", required=True)
+    parser.add_argument("--result_model", required=True)
 
     args = parser.parse_args()
-    suffix_analysis(Path(args.workdir))
+    suffix_analysis(Path(args.source_pos), Path(args.result_model), Path(args.workdir), )
 
 
 if __name__ == "__main__":

@@ -80,7 +80,6 @@ class SpeechTranslation(Workflow):
     def learn_noise_model(self):
         self._intermediate_step_call_wrapper(difflib_comparison.difflib_comparison)
         self._intermediate_step_call_wrapper(suffix_analysis.suffix_analysis)
-        self._intermediate_step_call_wrapper(pos_noise_analysis.pos_noise_analysis)
         self._finalize()
 
     def apply_noise_model(self):
